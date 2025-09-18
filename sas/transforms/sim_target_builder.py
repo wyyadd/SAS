@@ -28,18 +28,15 @@ class SimTargetBuilder(BaseTransform):
     def __call__(self, data: HeteroData) -> HeteroData:
         pos = data['agent']['position']
         head = data['agent']['heading']
-        vel = data['agent']['velocity']
         cos, sin = head.cos(), head.sin()
         rot_mat = torch.stack([torch.stack([cos, -sin], dim=-1),
                                torch.stack([sin, cos], dim=-1)],
                               dim=-2)
-        data['agent']['target'] = pos.new_zeros(data['agent']['num_nodes'], pos.size(-2), self.patch_size, 6)
+        data['agent']['target'] = pos.new_zeros(data['agent']['num_nodes'], pos.size(-2), self.patch_size, 4)
         for t in range(self.patch_size):
             data['agent']['target'][:, :-t - 1, t, :2] = ((pos[:, t + 1:, :2] - pos[:, :-t - 1, :2]).unsqueeze(-2) @
                                                           rot_mat[:, :-t - 1]).squeeze(-2)
             if pos.size(2) == 3:
                 data['agent']['target'][:, :-t - 1, t, 2] = pos[:, t + 1:, 2] - pos[:, :-t - 1, 2]
-            data['agent']['target'][:, :-t - 1, t, 3: 5] = (vel[:, t + 1:, :2].unsqueeze(-2) @
-                                                            rot_mat[:, :-t - 1]).squeeze(-2)
-            data['agent']['target'][:, :-t - 1, t, 5] = wrap_angle(head[:, t + 1:] - head[:, :-t - 1])
+            data['agent']['target'][:, :-t - 1, t, 3] = wrap_angle(head[:, t + 1:] - head[:, :-t - 1])
         return data

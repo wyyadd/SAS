@@ -13,7 +13,6 @@
 # limitations under the License.
 import os
 import pickle
-from typing import Optional
 
 import pytorch_lightning as pl
 import torch
@@ -48,7 +47,7 @@ class SlimAgentSimulator(pl.LightningModule):
                  input_dim: int,
                  hidden_dim: int,
                  pos_dim: int,
-                 vel_dim: int,
+                 # vel_dim: int,
                  theta_dim: int,
                  num_steps: int,
                  num_init_steps: int,
@@ -71,7 +70,7 @@ class SlimAgentSimulator(pl.LightningModule):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.pos_dim = pos_dim
-        self.vel_dim = vel_dim
+        # self.vel_dim = vel_dim
         self.theta_dim = theta_dim
         self.num_steps = num_steps
         self.num_init_steps = num_init_steps
@@ -107,18 +106,17 @@ class SlimAgentSimulator(pl.LightningModule):
         self.head = SASHead(
             hidden_dim=hidden_dim,
             pos_dim=pos_dim,
-            vel_dim=vel_dim,
+            # vel_dim=vel_dim,
             theta_dim=theta_dim,
             num_steps=num_steps,
             num_modes=num_modes,
         )
 
         if num_modes == 1:
-            self.loss = NLLLoss(component_distribution=['laplace'] * (pos_dim + vel_dim) + ['von_mises'] * theta_dim,
+            self.loss = NLLLoss(component_distribution=['laplace'] * pos_dim + ['von_mises'] * theta_dim,
                                 reduction='none')
         else:
-            self.loss = MixtureNLLLoss(component_distribution=['laplace'] * (pos_dim + vel_dim) +
-                                                              ['von_mises'] * theta_dim,
+            self.loss = MixtureNLLLoss(component_distribution=['laplace'] * pos_dim + ['von_mises'] * theta_dim,
                                        reduction='none')
 
         self.test_predictions = dict()
@@ -143,15 +141,12 @@ class SlimAgentSimulator(pl.LightningModule):
         pi = pred['pi']
         pred = torch.cat(
             [pred['pos_loc'][..., :self.pos_dim],
-             pred['vel_loc'][..., :self.vel_dim],
              pred['theta_loc'][..., :self.theta_dim],
              pred['pos_scale'][..., :self.pos_dim],
-             pred['vel_scale'][..., :self.vel_dim],
              pred['theta_conc'][..., :self.theta_dim]],
             dim=-1)
         target = torch.cat(
             [data['agent']['target'][:, :self.num_steps, :, :self.pos_dim],
-             data['agent']['target'][:, :self.num_steps, :, 3:self.vel_dim + 3],
              data['agent']['target'][:, :self.num_steps, :, -self.theta_dim:]],
             dim=-1)
         if self.num_modes == 1:
@@ -182,15 +177,12 @@ class SlimAgentSimulator(pl.LightningModule):
         pi = pred['pi']
         pred = torch.cat(
             [pred['pos_loc'][..., :self.pos_dim],
-             pred['vel_loc'][..., :self.vel_dim],
              pred['theta_loc'][..., :self.theta_dim],
              pred['pos_scale'][..., :self.pos_dim],
-             pred['vel_scale'][..., :self.vel_dim],
              pred['theta_conc'][..., :self.theta_dim]],
             dim=-1)
         target = torch.cat(
             [data['agent']['target'][:, :self.num_steps, :, :self.pos_dim],
-             data['agent']['target'][:, :self.num_steps, :, 3:self.vel_dim + 3],
              data['agent']['target'][:, :self.num_steps, :, -self.theta_dim:]],
             dim=-1)
         if self.num_modes == 1:
@@ -224,7 +216,6 @@ class SlimAgentSimulator(pl.LightningModule):
                 sample_inds = torch.multinomial(F.softmax(pi, dim=-1), num_samples=1, replacement=True).squeeze(-1)
                 # sample_inds = top_p_sampling(pi, 0.95)
                 pos = pred['pos_loc'][torch.arange(pi.size(0)), self.num_init_steps + t * num_action_steps - 1, sample_inds, :num_action_steps, :self.pos_dim]
-                vel = pred['vel_loc'][torch.arange(pi.size(0)), self.num_init_steps + t * num_action_steps - 1, sample_inds, :num_action_steps, :self.vel_dim]
                 theta = pred['theta_loc'][torch.arange(pi.size(0)), self.num_init_steps + t * num_action_steps - 1, sample_inds, :num_action_steps, :self.theta_dim]
                 # Transform to global coordinates
                 current_theta = data['agent']['heading'][:, self.num_init_steps + t * num_action_steps - 1]
@@ -239,8 +230,6 @@ class SlimAgentSimulator(pl.LightningModule):
                 else:
                     pos[..., 2] = data['agent']['position'][:, [self.num_init_steps - 1], 2]
                 data['agent']['position'][:, self.num_init_steps + t * num_action_steps: self.num_init_steps + (t + 1) * num_action_steps, :self.pos_dim] = pos[..., :self.pos_dim]
-                vel[..., :2] = vel[..., :2] @ rot_mat
-                data['agent']['velocity'][:, self.num_init_steps + t * num_action_steps: self.num_init_steps + (t + 1) * num_action_steps, :self.vel_dim] = vel[..., :self.vel_dim]
                 data['agent']['heading'][:, self.num_init_steps + t * num_action_steps: self.num_init_steps + (t + 1) * num_action_steps] = wrap_angle(current_theta.unsqueeze(-1) + theta[..., 0])
             traj_eval.append(torch.cat([data['agent']['position'][eval_mask, self.num_init_steps:, :3],
                                         data['agent']['heading'][eval_mask, self.num_init_steps:].unsqueeze(-1)],
