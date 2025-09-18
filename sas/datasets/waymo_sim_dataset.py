@@ -27,6 +27,7 @@ from torch_geometric.data import Dataset
 from torch_geometric.data import HeteroData
 from tqdm import tqdm
 
+from sas.datasets.noise_filter import filter_noise
 from sas.utils import interp_arc
 
 try:
@@ -265,10 +266,13 @@ class WaymoSimDataset(Dataset):
         for track_to_predict in scenario.tracks_to_predict:
             target_mask[track_to_predict.track_index] = True
 
+        new_mask = filter_noise(valid_mask, velocity[..., :2], position[..., :2], agent_type)
+
         return {
             'num_nodes': num_agents,
             'av_index': av_idx,
-            'valid_mask': valid_mask,
+            'valid_mask': new_mask,
+            'old_valid_mask': valid_mask,
             'target_mask': target_mask,
             'id': agent_id,
             'type': agent_type,

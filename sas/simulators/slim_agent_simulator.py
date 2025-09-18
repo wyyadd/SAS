@@ -133,7 +133,8 @@ class SlimAgentSimulator(pl.LightningModule):
         valid_mask = data['agent']['valid_mask'][:, :self.num_steps]
         predict_mask = torch.zeros_like(valid_mask).unsqueeze(-1).repeat(1, 1, self.patch_size)
         for t in range(self.patch_size):
-            predict_mask[:, :-t - 1, t] = valid_mask[:, :-t - 1] & valid_mask[:, t + 1:]
+            # predict_mask[:, :-t - 1, t] = valid_mask[:, :-t - 1] & valid_mask[:, t + 1:]
+            predict_mask[:, :-t - 1, t] = valid_mask.unfold(dimension=1, size=t + 2, step=1).all(dim=-1)
         # Due to the limitation of the Waymo Open Sim Agents Challenge, we fix the bbox size
         data['agent']['length'] = data['agent']['length'][:, [self.num_init_steps - 1]].repeat(1, self.num_steps)
         data['agent']['width'] = data['agent']['width'][:, [self.num_init_steps - 1]].repeat(1, self.num_steps)
@@ -171,7 +172,8 @@ class SlimAgentSimulator(pl.LightningModule):
         valid_mask = data['agent']['valid_mask'][:, :self.num_steps]
         predict_mask = torch.zeros_like(valid_mask).unsqueeze(-1).repeat(1, 1, self.patch_size)
         for t in range(self.patch_size):
-            predict_mask[:, :-t - 1, t] = valid_mask[:, :-t - 1] & valid_mask[:, t + 1:]
+            # predict_mask[:, :-t - 1, t] = valid_mask[:, :-t - 1] & valid_mask[:, t + 1:]
+            predict_mask[:, :-t - 1, t] = valid_mask.unfold(dimension=1, size=t + 2, step=1).all(dim=-1)
         # Due to the limitation of the Waymo Open Sim Agents Challenge, we fix the bbox size
         data['agent']['length'] = data['agent']['length'][:, [self.num_init_steps - 1]].repeat(1, self.num_steps)
         data['agent']['width'] = data['agent']['width'][:, [self.num_init_steps - 1]].repeat(1, self.num_steps)
