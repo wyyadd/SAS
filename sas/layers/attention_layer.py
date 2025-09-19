@@ -120,7 +120,7 @@ class AttentionLayer(MessagePassing):
         else:
             x_valid = x[valid_index_dst] + self.attn_postnorm(
                 self._attn_block(x_src, x_dst, r, r_dst, edge_index, size, valid_index_src, valid_index_dst))
-            x = torch.zeros_like(x).scatter_(
+            x = torch.zeros_like(x, dtype=x_valid.dtype).scatter_(
                 dim=0,
                 index=valid_index_dst.unsqueeze(-1).repeat(1, x.size(-1)),
                 src=x_valid + self.ff_postnorm(self._ff_block(self.ff_prenorm(x_valid))),
