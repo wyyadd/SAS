@@ -8,7 +8,7 @@
 #SBATCH --mail-user=wyyadd@gmail.com
 #SBATCH --mail-type=ALL
 
-cd $project/kGPT
+cd $project/SAS
 module purge
 module load python/3.12.4
 source ../agents/bin/activate
@@ -16,10 +16,10 @@ source ../agents/bin/activate
 pip3 install -r requirements.txt
 
 srun --ntasks=$SLURM_NNODES --ntasks-per-node=1 \
-tar -I pigz -xf $project/kGPT/data/training/processed.tar.gz -C $SLURM_TMPDIR
+tar -I pigz -xf $project/SAS/data/training/processed.tar.gz -C $SLURM_TMPDIR
 
-srun python3 train_k_gpt.py \
---root="$project/kGPT/data" \
+srun python3 train_sas.py \
+--root="$project/SAS/data" \
 --train_processed_dir="$SLURM_TMPDIR/processed" \
 --num_workers=8 \
 --accelerator="auto" \
@@ -30,7 +30,5 @@ srun python3 train_k_gpt.py \
 --test_batch_size=2 \
 --lr=1e-3 \
 --grad_batch_size=4 \
---patch_size=10 \
---max_num_agents=128 \
---max_epochs=30 \
+--max_epochs=32 \
 --precision="bf16-mixed"
