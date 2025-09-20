@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --nodes=1
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=4
-#SBATCH --gpus-per-node=a100:4
+#SBATCH --gpus-per-node=h100:4
 #SBATCH --cpus-per-gpu=4
 #SBATCH --mem-per-cpu=2G
-#SBATCH --time=2-12:00:00
+#SBATCH --time=2-00:00:00
 #SBATCH --mail-user=wyyadd@gmail.com
 #SBATCH --mail-type=ALL
 
@@ -21,14 +21,14 @@ tar -I pigz -xf $project/SAS/data/training/processed.tar.gz -C $SLURM_TMPDIR
 srun python3 train_sas.py \
 --root="$project/SAS/data" \
 --train_processed_dir="$SLURM_TMPDIR/processed" \
---num_workers=8 \
+--num_workers=4 \
 --accelerator="auto" \
 --devices=-1 \
 --num_nodes=$SLURM_NNODES \
---train_batch_size=1 \
+--train_batch_size=2 \
 --val_batch_size=2 \
 --test_batch_size=2 \
---lr=1e-3 \
---grad_batch_size=4 \
+--lr=5e-4 \
+--grad_batch_size=2 \
 --max_epochs=32 \
 --precision="bf16-mixed"

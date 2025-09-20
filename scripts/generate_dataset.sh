@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=32
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=32
 #SBATCH --mem=32G
 #SBATCH --time=0-10:00:00
 #SBATCH --mail-user=wyyadd@gmail.com
