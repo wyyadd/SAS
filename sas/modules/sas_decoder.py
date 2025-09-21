@@ -15,7 +15,7 @@ import os
 
 import torch
 import torch.nn as nn
-from torch_cluster import radius, radius_graph
+from torch_cluster import knn, knn_graph
 from torch_geometric.data import Batch
 from torch_geometric.data import HeteroData
 from torch_geometric.utils import dense_to_sparse
@@ -53,8 +53,6 @@ class SASDecoder(nn.Module):
         self.head_dim = head_dim
         self.dropout = dropout
         self.patch_size = os.getenv("PATCH_SIZE", 10)
-        self.a2a_radius = 60
-        self.m2a_radius = 30
 
         num_agent_types = 5
         num_map_types = 17
@@ -175,8 +173,7 @@ class SASDecoder(nn.Module):
         else:
             batch_t = pos_t.new_zeros(data['agent']['num_nodes'] * self.num_steps, dtype=torch.long)
             batch_m = pos_m.new_zeros(data['map_point']['num_nodes'], dtype=torch.long)
-        edge_index_m2a = radius(x=pos_m[:, :2], y=pos_t[:, :2], r=self.m2a_radius, batch_x=batch_m, batch_y=batch_t,
-                                max_num_neighbors=300)
+        edge_index_m2a = knn(x=pos_m[:, :2], y=pos_t[:, :2], k=self.num_m2a_nbrs, batch_x=batch_m, batch_y=batch_t)
         edge_index_m2a = edge_index_m2a[[1, 0]]
         edge_index_m2a = edge_index_m2a[:, mask_t[edge_index_m2a[1]]]
         valid_index_m = edge_index_m2a[0].unique()
@@ -206,8 +203,7 @@ class SASDecoder(nn.Module):
         else:
             batch_s = torch.arange(self.num_steps,
                                    device=pos_a.device).repeat_interleave(data['agent']['num_nodes'])
-        edge_index_a2a = radius_graph(x=pos_s[:, :2], r=self.a2a_radius, batch=batch_s, loop=False,
-                                      max_num_neighbors=300)
+        edge_index_a2a = knn_graph(x=pos_s[:, :2], k=self.num_a2a_nbrs, batch=batch_s, loop=False)
         edge_index_a2a = subgraph(subset=mask_s, edge_index=edge_index_a2a)[0]
         rel_pos_a2a = pos_s[edge_index_a2a[0]] - pos_s[edge_index_a2a[1]]
         rel_head_a2a = wrap_angle(head_s[edge_index_a2a[0]] - head_s[edge_index_a2a[1]])

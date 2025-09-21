@@ -25,10 +25,10 @@ srun python3 train_sas.py \
 --accelerator="auto" \
 --devices=-1 \
 --num_nodes=$SLURM_NNODES \
---train_batch_size=1 \
---val_batch_size=1 \
---test_batch_size=1 \
+--train_batch_size=2 \
+--val_batch_size=2 \
+--test_batch_size=2 \
 --lr=5e-4 \
---grad_batch_size=3 \
+--grad_batch_size=2 \
 --max_epochs=32 \
 --precision="bf16-mixed"
