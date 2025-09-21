@@ -2,7 +2,7 @@
 #SBATCH --nodes=2
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=h100:4
-#SBATCH --cpus-per-gpu=6
+#SBATCH --cpus-per-gpu=8
 #SBATCH --mem-per-cpu=4G
 #SBATCH --time=2-00:00:00
 #SBATCH --mail-user=wyyadd@gmail.com
