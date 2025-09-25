@@ -21,7 +21,7 @@ tar -I pigz -xf $project/SAS/data/training/processed.tar.gz -C $SLURM_TMPDIR
 srun python3 train_sas.py \
 --root="$project/SAS/data" \
 --train_processed_dir="$SLURM_TMPDIR/processed" \
---num_workers=4 \
+--num_workers=8 \
 --accelerator="auto" \
 --devices=-1 \
 --num_nodes=$SLURM_NNODES \

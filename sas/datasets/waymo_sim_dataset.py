@@ -533,7 +533,10 @@ class WaymoSimDataset(Dataset):
 
     def get(self, idx: int) -> HeteroData:
         with open(self.processed_paths[idx], 'rb') as handle:
-            return HeteroData(pickle.load(handle))
+            data = pickle.load(handle)
+            if self.split != 'train':
+                data["agent"]["valid_mask"] = data["agent"]["old_valid_mask"]
+            return HeteroData(data)
 
     def _download(self) -> None:
         # if complete raw/processed files exist, skip downloading

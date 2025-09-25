@@ -243,7 +243,8 @@ class SlimAgentSimulator(pl.LightningModule):
                 track_predictions = dict()
                 for j in range(len(eval_id_unbatch[i])):
                     track_predictions[eval_id_unbatch[i][j].item()] = traj_eval_unbatch[i][j].cpu().numpy()
-                self.test_predictions[data['scenario_id'][i]] = track_predictions
+                # self.test_predictions[data['scenario_id'][i]] = track_predictions
+                self.write_test_scenario(data['scenario_id'][i], track_predictions)
         else:
             eval_id = data['agent']['id'][eval_mask]
             track_predictions = dict()
