@@ -63,7 +63,7 @@ class SlimAgentSimulator(pl.LightningModule):
                  weight_decay: float,
                  T_max: int,
                  submission_dir: str,
-                 submission_file_name: str,
+                 simulation_times: int,
                  **kwargs) -> None:
         super(SlimAgentSimulator, self).__init__()
         self.save_hyperparameters()
@@ -88,7 +88,7 @@ class SlimAgentSimulator(pl.LightningModule):
         self.weight_decay = weight_decay
         self.T_max = T_max
         self.submission_dir = submission_dir
-        self.submission_file_name = submission_file_name
+        self.simulation_times = simulation_times
         self.patch_size = os.getenv("PATCH_SIZE", 10)
 
         self.decoder = SASDecoder(
@@ -209,7 +209,7 @@ class SlimAgentSimulator(pl.LightningModule):
         data['agent']['height'] = data['agent']['height'][:, [self.num_init_steps - 1]].repeat(1, self.num_steps)
         traj_eval = []
         num_action_steps = self.patch_size
-        for k in range(32):
+        for k in range(self.simulation_times):
             for t in range(self.num_rollout_steps // num_action_steps):
                 pred = self(data)
                 pi = pred['pi'][:, self.num_init_steps + t * num_action_steps - 1]  # [A, K]
@@ -234,6 +234,8 @@ class SlimAgentSimulator(pl.LightningModule):
             traj_eval.append(torch.cat([data['agent']['position'][eval_mask, self.num_init_steps:, :3],
                                         data['agent']['heading'][eval_mask, self.num_init_steps:].unsqueeze(-1)],
                                        dim=-1))
+        traj_eval = traj_eval * (32 // self.simulation_times)
+        assert len(traj_eval) == 32
         traj_eval = torch.stack(traj_eval, dim=1)
         if isinstance(data, Batch):
             eval_id_unbatch = unbatch(src=data['agent']['id'][eval_mask], batch=data['agent']['batch'][eval_mask],
@@ -335,5 +337,4 @@ class SlimAgentSimulator(pl.LightningModule):
         parser.add_argument('--weight_decay', type=float, default=0.1)
         parser.add_argument('--T_max', type=int, default=32)
         parser.add_argument('--submission_dir', type=str, default='./')
-        parser.add_argument('--submission_file_name', type=str, default='submission')
         return parent_parser
