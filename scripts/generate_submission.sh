@@ -7,7 +7,8 @@
 #SBATCH --mail-type=ALL
 
 cd $project/SAS
-module purge module load python/3.12.4
+module purge module
+modile load python/3.12.4
 source ../agents/bin/activate
 
 python3 generate_submission.py \
